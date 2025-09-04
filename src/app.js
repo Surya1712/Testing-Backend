@@ -17,4 +17,19 @@ app.use(express.static("public"));
 
 app.use(cookieParser());
 
+//! routes import
+
+import userRouter from "./routes/user.routes.js";
+
+//! routes declaration
+app.use("/api/v1/users", userRouter);
+
+/*
+ *how to genrate url 
+! without api
+* http://localhost:8000/users/register 
+! with api 
+* http://localhost:8000/api/v1/users/register 
+ */
+
 export { app };
