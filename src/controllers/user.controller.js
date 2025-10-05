@@ -261,7 +261,8 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 });
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
-  const { fullName, email } = req.body;
+  console.log("REQ BODY:", req.body); // ✅ Add this
+  const { fullName, email } = req.body || {};
   if (!fullName || !email) {
     throw new ApiError(400, "All fields are required");
   }

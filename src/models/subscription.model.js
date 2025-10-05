@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { asyncHandler } from "../utils/asyncHandler";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 const subscriptionSchema = new Schema(
   {

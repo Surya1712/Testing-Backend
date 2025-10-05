@@ -11,7 +11,8 @@ import { Like } from "../models/like.model.js";
 // get all videos based on query, sort, pagination
 const getAllVideos = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
-  console.log(useId);
+  // console.log for debugging should reference a defined variable
+  // console.log(userId);
   const pipeline = [];
 
   /**
@@ -42,7 +43,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
     }
     pipeline.push({
       $match: {
-        owner: new mongoose.Types.ObjectId(useId),
+        owner: new mongoose.Types.ObjectId(userId),
       },
     });
   }
@@ -107,8 +108,8 @@ const publishAVideo = asyncHandler(async (req, res) => {
     throw new ApiError(400, "All fields are required");
   }
 
-  const videoFilePath = req.files?.videoFile[0].path;
-  const thumbnailFilePth = req.files?.thumbnailFile[0].path;
+  const videoFilePath = req.files?.videoFile?.[0]?.path;
+  const thumbnailFilePth = req.files?.thumbnail?.[0]?.path;
 
   if (!videoFilePath) {
     throw new ApiError(400, "VideoFile LocalPath is required");
@@ -136,8 +137,8 @@ const publishAVideo = asyncHandler(async (req, res) => {
       public_id: videoFile.public_id,
     },
     thumbnail: {
-      url: thumbnail.url,
-      public_id: thumbnail.public_id,
+      url: thumbnailFile.url,
+      public_id: thumbnailFile.public_id,
     },
     owner: req.user?._id,
     isPublished: false,
@@ -160,9 +161,6 @@ const getVideoById = asyncHandler(async (req, res) => {
 
   if (!isValidObjectId(videoId)) {
     throw new ApiError(400, "Invalid videoId");
-  }
-  if (!isValidObjectId(user?._id)) {
-    throw new ApiError(400, "Invalid userId");
   }
 
   const video = await Video.aggregate([
@@ -201,7 +199,8 @@ const getVideoById = asyncHandler(async (req, res) => {
               },
               isSubscribed: {
                 $cond: {
-                  $if: {
+                  // ✅ FIXED HERE (removed `$if`)
+                  if: {
                     $in: [req.user?._id, "$subscribers.subscriber"],
                   },
                   then: true,
@@ -223,15 +222,12 @@ const getVideoById = asyncHandler(async (req, res) => {
     },
     {
       $addFields: {
-        likesCount: {
-          $size: "$likes",
-        },
-        owner: {
-          $first: "owner",
-        },
+        likesCount: { $size: "$likes" },
+        owner: { $first: "$owner" },
         isLiked: {
           $cond: {
-            if: { $in: [req.user?._id, "likes.likedBy"] },
+            // ✅ This was already correct
+            if: { $in: [req.user?._id, "$likes.likedBy"] },
             then: true,
             else: false,
           },
@@ -254,18 +250,14 @@ const getVideoById = asyncHandler(async (req, res) => {
     },
   ]);
 
-  if (!video) {
-    throw new ApiError(500, "Failed to fetch video");
+  if (!video || video.length === 0) {
+    throw new ApiError(404, "Video not found");
   }
 
-  await Video.findByIdAndUpdate(videoId, {
-    $inc: { views: 1 },
-  });
+  await Video.findByIdAndUpdate(videoId, { $inc: { views: 1 } });
 
   await User.findByIdAndUpdate(req.user?._id, {
-    $addToSet: {
-      WatchHistory: videoId,
-    },
+    $addToSet: { watchHistory: videoId },
   });
 
   return res
@@ -334,7 +326,9 @@ const updateVideo = asyncHandler(async (req, res) => {
     await deleteOnCloudinary(thumbnailToDelete);
   }
 
-  return res.status(200).json(200, updatedVideo, "VIdeo Updated Successfully");
+  return res
+    .status(200)
+    .json(new ApiResponse(200, updatedVideo, "Video Updated Successfully"));
 });
 
 // delete video
