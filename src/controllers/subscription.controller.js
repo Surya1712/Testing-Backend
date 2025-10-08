@@ -69,7 +69,7 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
     {
       // Stage 1: Filter subscriptions where the 'channel' field matches the provided channelId
       $match: {
-        channel: channelObjectId,
+        channel: new mongoose.Types.ObjectId(channelId),
       },
     },
     {

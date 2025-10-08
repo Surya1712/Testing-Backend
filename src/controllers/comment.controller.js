@@ -69,7 +69,12 @@ const getVideoComments = asyncHandler(async (req, res) => {
         isLiked: {
           // Check if the current logged-in user liked the comment
           $cond: {
-            if: { $in: [req.user?._id, "$likes.likedBy"] },
+            if: {
+              $in: [
+                new mongoose.Types.ObjectId(req.user?._id),
+                "$likes.likedBy",
+              ],
+            },
             then: true,
             else: false,
           },
@@ -113,7 +118,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
  */
 const addComment = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
-  const { content } = req.body;
+  const { content } = req.body || {};
 
   if (!content?.trim()) {
     // Use optional chaining and trim for robust check
